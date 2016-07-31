@@ -4,7 +4,9 @@ It has been tested with the following device:
 	- 0,96" I2C OLED, Manufacturer: Heltec-Taobao on Arduino UNO
 
 For further infomration, please visit:
-https://deloarts.wordpress.com/2015/06/17/oled-i%C2%B2c-128x64-monochrome-library/
+- Blog:	https://deloarts.wordpress.com/2015/06/17/oled-i%C2%B2c-128x64-monochrome-library/
+- Website, english version: http://deloarts.com/en/arduino/oled_display/
+- Website, german version: http://deloarts.com/de/arduino/oled_display/ 
 
 ##### Commands
 The following commands are implemented:
