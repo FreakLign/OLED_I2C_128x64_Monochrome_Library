@@ -70,7 +70,6 @@ class Display
 		byte printNumber(float Data, byte Precision = 6, byte PosX = 255, byte PosY = 255);
 		void drawBitmap(const byte *Bitmaparray, byte PosX, byte PosY, byte Width, byte Height);
 		void clearDisplay();
-		void setPixel(boolean State, byte PosX, byte PosY);
 		void setCursor(byte PosX, byte PosY);
 		void setBlackBackground();
 		void setWhiteBackground();
