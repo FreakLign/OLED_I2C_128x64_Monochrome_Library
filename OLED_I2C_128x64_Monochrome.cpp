@@ -327,8 +327,7 @@ void Display::printNum(signed char Data)
 		Data = (-Data > 99) ? 99 : -Data; //negative values are clipped at -99
 		printChar('-');
 	} else {
-    if (100 > Data) printChar(0x30); else printChar(0x30+(Data/xx)); 
-    Data = Data % xx; 		
+    if (100 > Data) printChar(0x30); else printChar(0x30+(Data/100));  		
 	}
   for (byte xx=10;xx>0;xx=xx/10)
   {
