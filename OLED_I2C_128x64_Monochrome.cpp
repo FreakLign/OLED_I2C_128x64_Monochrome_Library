@@ -320,16 +320,17 @@ void Display::printNum(char Data, byte PosX, byte PosY)
 	printNum(Data); 
 }
 
-void Display::printNum(char Data)
+void Display::printNum(signed char Data)
 {
 	if (Data < 0) 
 	{
 		Data = (-Data > 99) ? 99 : -Data; //negative values are clipped at -99
 		printChar('-');
 	} else {
-		printChar(0x20);
+    if (100 > Data) printChar(0x30); else printChar(0x30+(Data/xx)); 
+    Data = Data % xx; 		
 	}
-  for (byte xx=100;xx>0;xx=xx/10)
+  for (byte xx=10;xx>0;xx=xx/10)
   {
     if (xx > Data) printChar(0x30); else printChar(0x30+(Data/xx)); 
     Data = Data % xx; 

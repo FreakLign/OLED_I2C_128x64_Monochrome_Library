@@ -67,7 +67,7 @@ class Display
 		void printChar(byte Char);
 		void printChar(byte Char, byte PosX, byte PosY); 
 		void printString(const byte *Data, byte PosX = 255, byte PosY = 255);
-		void printNum(char Data);
+		void printNum(signed char Data);
 		void printNum(char Data, byte PosX, byte PosY);
 		void drawBitmap(const byte *Bitmaparray, byte PosX, byte PosY, byte Width, byte Height);
 		void clearDisplay();
