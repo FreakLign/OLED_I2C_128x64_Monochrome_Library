@@ -31,8 +31,8 @@
 #include <Arduino.h>
 #include <Wire.h>
 
-#define OLED_Max_X 128
-#define OLED_Max_Y 64
+#define OLED_Max_X 16
+#define OLED_Max_Y 8
 
 #define OLED_ADDRESS 0x3C
 #define I2C_400KHZ 1 // 0 to use default 100Khz, 1 for 400Khz
@@ -64,10 +64,11 @@ class Display
 		void initialize();
 		void sendCommand(byte Command);
 		void sendData(byte Data);
-		void printChar(char Char, byte PosX = 255, byte PosY = 255);
-		void printString(const char *Data, byte PosX = 255, byte PosY = 255);
-		byte printNumber(long Data, byte PosX = 255, byte PosY = 255);
-		byte printNumber(float Data, byte Precision = 6, byte PosX = 255, byte PosY = 255);
+		void printChar(byte Char);
+		void printChar(byte Char, byte PosX, byte PosY); 
+		void printString(const byte *Data, byte PosX = 255, byte PosY = 255);
+		void printNum(char Data);
+		void printNum(char Data, byte PosX, byte PosY);
 		void drawBitmap(const byte *Bitmaparray, byte PosX, byte PosY, byte Width, byte Height);
 		void clearDisplay();
 		void setCursor(byte PosX, byte PosY);
@@ -79,8 +80,12 @@ class Display
 		void setHorizontalMode();
 		void setBrightness(byte Brightness);
 		void rotateDisplay180();
+		void setFontSize(byte f);
+		byte px, py, fontsize;
+		boolean scroll = false;
 };
-extern Display lcd;
+
+extern Display oled;
 #endif
 // #####################################################################################################################
 // ##### END OF CODE ###################################################################################################
