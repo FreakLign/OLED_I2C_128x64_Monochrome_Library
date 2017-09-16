@@ -32,6 +32,7 @@ void Display::initialize()
 	setPageMode();
 	clearDisplay();
     setDisplayOn();
+	fontsize=1;
 }
 // #####################################################################################################################
 // ##### SEND COMMAND ##################################################################################################
@@ -62,203 +63,211 @@ void Display::sendData(byte Data)
 // More on the scale2x/scale3x algorithms unter www.scale2x.it - it is so simple and lightweight that I could easily
 // adapt it.
 
-void Display::printChar(byte Char, byte PosX, byte PosY) 
+void Display::printChar(unsigned char Char, byte PosX, byte PosY) 
 {	
 	px = PosX % OLED_Max_X ;
 	py = PosY % OLED_Max_Y ;
-	setCursor(px,py);
+	setPos(px,py);
 	printChar(Char);
 }
 
-void Display::printChar(byte Char)
+void Display::printChar(unsigned char Char)
 {
+  if(Char == '\n') {                     // Newline?
+    px  = 0;                        // Reset x to zero,
+    py += fontsize;             // advance y one line
+		// Check for boundaries before exiting 
+ 	}
+	else { // No newline command, print character
 // ###################################
 //  fontsize=1 ==> Standard 8x8 chars
-// ####################################
-	if (fontsize == 1)
-	{	
-		setCursor(px,py);
-		for(byte i = 0; i < 8; i++)
-    {
-	   sendData(pgm_read_byte(&BasicFont[Char][i])); 
-			//Simple block copy operation, aided by the display. 
+// ###################################
+		if (fontsize == 1)
+		{	
+			setPos(px,py);
+			for(byte i = 0; i < 8; i++)
+	    {
+		   sendData(pgm_read_byte(&BasicFont[Char][i]) ^ inv); 
+				//Simple block copy operation, aided by the display. 
+			}
 		}
-	}
 // ###################################
 //  fontsize=2 ==> scale2x to 16x16
 // ###################################
-	if (fontsize == 2)
-	{
+		if (fontsize == 2)
+		{
 // Call scale2x algorithm to display readable 16x16 font
 // for a single 8x8 bit block (=8 bytes)
 // Result is a (2x8 bytes)x2 array of those blocks
-		byte scale2x[16][2];
-		for (byte x=0;x<8;x++)	// Loop through the columns
-		{
-		//init the four target bytes in the output array
-			scale2x[x*2][0]=0;
-			scale2x[x*2][1]=0;
-			scale2x[x*2+1][0]=0;
-			scale2x[x*2+1][1]=0;
-		// Read the source data and the neighbouring bytes
-			byte col = pgm_read_byte(&BasicFont[Char][x]);
-			byte prev = x>0 ? pgm_read_byte(&BasicFont[Char][x-1]) : 0;
-			byte next = x<7 ? pgm_read_byte(&BasicFont[Char][x+1]) : 0; // if out of bounds, take 0
-		// Loop through the lines (i.e. the bits of the source byte)
-			for(byte y=0;y<8;y++)
+			byte scale2x[16][2];
+			for (byte x=0;x<8;x++)	// Loop through the columns
 			{
-				byte h_mask = 0x01 << y; //Bit mask for reading the single pixels from the column byte
-				// Store the bits as named in the scale2x algorithm
-				boolean e = (col & h_mask) != 0;
-				boolean b = ((col << 1) & h_mask) != 0; // Bits next to the masked bit
-				boolean h = ((col >> 1) & h_mask) != 0; // shifted just under the mask
-				boolean d  = (prev & h_mask) != 0;	// Bits from left and right neighbor
-				boolean f = (next & h_mask) != 0;
-	
-				// Target byte address
-				byte y2x_b = y / 4; // lower or higher byte?
-
-				// This is where the scale2x magic happens: 
-				if (b != h && d != f)		// scale2x only if surrounding pixels differ
+			//init the four target bytes in the output array
+				scale2x[x*2][0]=inv;
+				scale2x[x*2][1]=inv;
+				scale2x[x*2+1][0]=inv;
+				scale2x[x*2+1][1]=inv;
+			// Read the source data and the neighbouring bytes
+				byte col = pgm_read_byte(&BasicFont[Char][x]);
+				byte prev = x>0 ? pgm_read_byte(&BasicFont[Char][x-1]) : 0;
+				byte next = x<7 ? pgm_read_byte(&BasicFont[Char][x+1]) : 0; // if out of bounds, take 0
+			// Loop through the lines (i.e. the bits of the source byte)
+				for(byte y=0;y<8;y++)
 				{
-					h_mask = 0x01 << ((y & 0x03) * 2); 	// 1 bit shifted by 0, 2, 4, 6
-					if (d == b ? d : e) // Write pixel e0 but only if relevant bit is set
-						{ scale2x[x*2][y2x_b] = scale2x[x*2][y2x_b] | h_mask; }
-					if (b == f ? f : e) // Write pixel e1 but only if relevant bit is set
-						{ scale2x[x*2+1][y2x_b] = scale2x[x*2+1][y2x_b] | h_mask; }
-					h_mask = h_mask << 1; // Move on to odd-line pixels
-					if (d == h ? d : e) // Write pixel e2 but only if relevant bit is set
-						{ scale2x[x*2][y2x_b] = scale2x[x*2][y2x_b] | h_mask; }
-					if (h == f ? f : e) // Write pixel e3 but only if relevant bit is set
-						{ scale2x[x*2+1][y2x_b] = scale2x[x*2+1][y2x_b] | h_mask; }
-				} else {
-					if (e)	//if pixel is set, write 2x2px block to output
+					byte h_mask = 0x01 << y; //Bit mask for reading the single pixels from the column byte
+					// Store the bits as named in the scale2x algorithm
+					boolean e = (col & h_mask) != 0;
+					boolean b = ((col << 1) & h_mask) != 0; // Bits next to the masked bit
+					boolean h = ((col >> 1) & h_mask) != 0; // shifted just under the mask
+					boolean d  = (prev & h_mask) != 0;	// Bits from left and right neighbor
+					boolean f = (next & h_mask) != 0;
+		
+					// Target byte address
+					byte y2x_b = y / 4; // lower or higher byte?
+	
+					// This is where the scale2x magic happens: 
+					if (b != h && d != f)		// scale2x only if surrounding pixels differ
 					{
-						h_mask = 0x03 << ((y & 0x03) * 2) ; // 2 bits shifted by 0, 2, 4, 6
-						scale2x[x*2][y2x_b] = scale2x[x*2][y2x_b] | h_mask;
-						scale2x[x*2+1][y2x_b] = scale2x[x*2+1][y2x_b] | h_mask;
-					} /* if (e) */		
-				} /* if scale2x else */ 
-			} /* for y */ 
-		} /* for x */
-		//Now copy prepared bytes to display
-		setCursor(px, py);
-		for (byte x = 0;x<16;x++)
-		{ 
-			sendData(scale2x[x][0]); 
-		}
-		setCursor(px, py+1);
-		for (byte x = 0;x<16;x++)
-		{ 
-			sendData(scale2x[x][1]);
-		}
-	} 
+						h_mask = 0x01 << ((y & 0x03) * 2); 	// 1 bit shifted by 0, 2, 4, 6
+						if (d == b ? d : e) // Write pixel e0 but only if relevant bit is set
+							{ scale2x[x*2][y2x_b] ^= h_mask; }
+						if (b == f ? f : e) // Write pixel e1 but only if relevant bit is set
+							{ scale2x[x*2+1][y2x_b] ^= h_mask; }
+						h_mask = h_mask << 1; // Move on to odd-line pixels
+						if (d == h ? d : e) // Write pixel e2 but only if relevant bit is set
+							{ scale2x[x*2][y2x_b] ^= h_mask; }
+						if (h == f ? f : e) // Write pixel e3 but only if relevant bit is set
+							{ scale2x[x*2+1][y2x_b] ^= h_mask; }
+					} else {
+						if (e)	//if pixel is set, write 2x2px block to output
+						{
+							h_mask = 0x03 << ((y & 0x03) * 2) ; // 2 bits shifted by 0, 2, 4, 6
+							scale2x[x*2][y2x_b] ^= h_mask;
+							scale2x[x*2+1][y2x_b] ^= h_mask;
+						} /* if (e) */		
+					} /* if scale2x else */ 
+				} /* for y */ 
+			} /* for x */
+			//Now copy prepared bytes to display
+			setPos(px, py);
+			for (byte x = 0;x<16;x++)
+			{ 
+				sendData(scale2x[x][0]); 
+			}
+			setPos(px, py+1);
+			for (byte x = 0;x<16;x++)
+			{ 
+				sendData(scale2x[x][1]);
+			}
+		} 
 // ###################################
 //  fontsize==3 ==> scale3x to 24x24
 // ###################################
-	if (fontsize == 3)
-	{ 
+		if (fontsize == 3)
+		{ 
 // Call scale3x algorithm to convert 8x8 pixel font to 24x24px
 // Source is an 8-byte block, result is a (3x8bit)x3 array
-		byte scale3x[24][3];
-		for (byte x=0;x<8;x++)	// Loop through the source columns
-		{
-			//init target bytes in the output array
-			byte xxx=3 * x;
-			for(byte i =0;i<3;i++)
+			byte scale3x[24][3];
+			for (byte x=0;x<8;x++)	// Loop through the source columns
 			{
-				scale3x[xxx][i]=0;
-				scale3x[xxx+1][i]=0;
-				scale3x[xxx+2][i]=0;
-			}
-			// Load the data byte for this column, and its direct neighbours
-			byte col = pgm_read_byte(&BasicFont[Char][x]);
-			byte prev = x>0 ? pgm_read_byte(&BasicFont[Char][x-1]) : 0;
-			byte next = x<7 ? pgm_read_byte(&BasicFont[Char][x+1]) : 0; // if out of bounds, take 0
-			// Step through the lines.
-			for(byte y=0;y<8;y++)
-			{
-				byte h_mask = 0x01 << y; //Bit mask for reading the single pixels 
-									// Store the bits as named in the scale3x algorithm
-				boolean a = ((prev << 1) & h_mask) != 0; 
-				boolean b = ((col << 1) & h_mask) != 0; // Bits next to the masked bit
-				boolean c = ((next << 1) & h_mask) != 0;
-				boolean d  = (prev & h_mask) != 0;	// Bits from left and right neighbor
-				boolean e = (col & h_mask) != 0;
-				boolean f = (next & h_mask) != 0;
-				boolean g = ((prev >> 1) & h_mask) != 0;
-				boolean h = ((col >> 1) & h_mask) != 0; // shifted just under the mask
-				boolean i = ((next >> 1) & h_mask) != 0;
-			// Target addresses
-			// 3 bits make for uncomfortable shifting operations, 
-			// prepare addressing mode
-				byte t_lo = (y * 3) % 8;
-				byte t_hi = (y * 3) / 8; 
-	
-				if (b != h && d != f)		// scale3x only if surrounding pixels differ
+				//init target bytes in the output array
+				byte xxx=3 * x;
+				for(byte i =0;i<3;i++)
 				{
-					h_mask = 0x01 << t_lo; 	// 1 bit shifted to posn. */
-					if (d == b ? d : e) // Write pixel e0 but only if relevant bit is set
-						scale3x[xxx][t_hi] = scale3x[xxx][t_hi] | h_mask;
-					if ((d == b && e != c) || (b ==f && e != a) ? b : e) // Pixel e1
-						scale3x[xxx+1][t_hi] = scale3x[xxx+1][t_hi] | h_mask;
-					if (b == f ? f : e) // Pixel e2
-						scale3x[xxx+2][t_hi] = scale3x[xxx+2][t_hi] | h_mask;
-					// Next line. 
-					if (++t_lo > 7) 	// Increment mask index; adjust for boundary
+				// Set background pixels to 0 or 0xff, depending on inv
+					scale3x[xxx][i]=inv;
+					scale3x[xxx+1][i]=inv;
+					scale3x[xxx+2][i]=inv;
+				}
+				// Load the data byte for this column, and its direct neighbours
+				byte col = pgm_read_byte(&BasicFont[Char][x]);
+				byte prev = x>0 ? pgm_read_byte(&BasicFont[Char][x-1]) : 0;
+				byte next = x<7 ? pgm_read_byte(&BasicFont[Char][x+1]) : 0; // if out of bounds, take 0
+				// Step through the lines.
+				for(byte y=0;y<8;y++)
+				{
+					byte h_mask = 0x01 << y; //Bit mask for reading the single pixels 
+										// Store the bits as named in the scale3x algorithm
+					boolean a = ((prev << 1) & h_mask) != 0; 
+					boolean b = ((col << 1) & h_mask) != 0; // Bits next to the masked bit
+					boolean c = ((next << 1) & h_mask) != 0;
+					boolean d  = (prev & h_mask) != 0;	// Bits from left and right neighbor
+					boolean e = (col & h_mask) != 0;
+					boolean f = (next & h_mask) != 0;
+					boolean g = ((prev >> 1) & h_mask) != 0;
+					boolean h = ((col >> 1) & h_mask) != 0; // shifted just under the mask
+					boolean i = ((next >> 1) & h_mask) != 0;
+				// Target addresses
+				// 3 bits make for uncomfortable shifting operations, 
+				// prepare addressing mode
+					byte t_lo = (y * 3) % 8;
+					byte t_hi = (y * 3) / 8; 
+		
+					if (b != h && d != f)		// scale3x only if surrounding pixels differ
 					{
-						t_lo = 0;
-						t_hi++;
-					}
-					h_mask = 0x01 << t_lo;  // Create bit mask
-					if ((d == b && e != g) || (d == h && e != a) ? d : e)	// Pixel e3
-						scale3x[xxx][t_hi] = scale3x[xxx][t_hi] | h_mask;
-					if (e) 	// Pixel e4
-						scale3x[xxx+1][t_hi] = scale3x[xxx+1][t_hi] | h_mask;
-					if ((b == f && e != i) || (h == f && e != c) ? f : e) // Pixel e5
-						scale3x[xxx+2][t_hi] = scale3x[xxx+2][t_hi] | h_mask;
-					// Next line.
-					if (++t_lo > 7) 	// Increment mask index; adjust for boundary
-					{
-						t_lo = 0;
-						t_hi++;
-					}					
-					h_mask = 0x01 << t_lo;	// Create bit mask
-					if (d == h ? d : e)	// Pixel e6
-						scale3x[xxx][t_hi] = scale3x[xxx][t_hi] | h_mask;
-					if ((d == h && e != i) || (h == f && e != g) ? h : e) 	// Pixel e7
-						scale3x[xxx+1][t_hi] = scale3x[xxx+1][t_hi] | h_mask;
-					if (h == f ? f : e) // Pixel e8
-						scale3x[xxx+2][t_hi] = scale3x[xxx+2][t_hi] | h_mask;
-				} else { // 
-					if (e)	//if pixel is set, write 3x3px block to output
-					{
-						for (byte i=3;i>0;i--)
+						h_mask = 0x01 << t_lo; 	// 1 bit shifted to posn. */
+						if (d == b ? d : e) // Write pixel e0 but only if relevant bit is set
+							scale3x[xxx][t_hi] ^= h_mask;
+						if ((d == b && e != c) || (b ==f && e != a) ? b : e) // Pixel e1
+							scale3x[xxx+1][t_hi] ^= h_mask;
+						if (b == f ? f : e) // Pixel e2
+							scale3x[xxx+2][t_hi] ^= h_mask;
+						// Next line. 
+						if (++t_lo > 7) 	// Increment mask index; adjust for boundary
 						{
-							h_mask = 0x01 << t_lo ; // 2 bits shifted by 0, 2, 4, 6
-							for (byte k=0;k<3;k++)
-								scale3x[xxx+k][t_hi] = scale3x[xxx+k][t_hi] | h_mask;
-							if (++t_lo > 7) 	// Increment mask index; adjust for boundary
+							t_lo = 0;
+							t_hi++;
+						}
+						h_mask = 0x01 << t_lo;  // Create bit mask
+						if ((d == b && e != g) || (d == h && e != a) ? d : e)	// Pixel e3
+							scale3x[xxx][t_hi] ^= h_mask;
+						if (e) 	// Pixel e4
+							scale3x[xxx+1][t_hi] ^= h_mask;
+						if ((b == f && e != i) || (h == f && e != c) ? f : e) // Pixel e5
+							scale3x[xxx+2][t_hi] ^= h_mask;
+						// Next line.
+						if (++t_lo > 7) 	// Increment mask index; adjust for boundary
+						{
+							t_lo = 0;
+							t_hi++;
+						}					
+						h_mask = 0x01 << t_lo;	// Create bit mask
+						if (d == h ? d : e)	// Pixel e6
+							scale3x[xxx][t_hi] ^= h_mask;
+						if ((d == h && e != i) || (h == f && e != g) ? h : e) 	// Pixel e7
+							scale3x[xxx+1][t_hi] ^= h_mask;
+						if (h == f ? f : e) // Pixel e8
+							scale3x[xxx+2][t_hi] ^= h_mask;
+					} else { // 
+						if (e)	//if pixel is set, write 3x3px block to output
+						{
+							for (byte i=3;i>0;i--)
 							{
-								t_lo = 0;
-								t_hi++;
-							}							
-						} // for i
-					} /* if (e) */		
-				} /* if scale3x else */ 
-			} /* for y */ 
-		} /* for x */
-		//Now copy prepared bytes to display
-		for (byte y = 0;y<3;y++)
-		{
-			setCursor(px, py+y);
-			for (byte x = 0;x<24;x++)
-			{ 
-				sendData(scale3x[x][y]);
+								h_mask = 0x01 << t_lo ; // 2 bits shifted by 0, 2, 4, 6
+								for (byte k=0;k<3;k++)
+									scale3x[xxx+k][t_hi] ^= h_mask;
+								if (++t_lo > 7) 	// Increment mask index; adjust for boundary
+								{
+									t_lo = 0;
+									t_hi++;
+								}							
+							} // for i
+						} /* if (e) */		
+					} /* if scale3x else */ 
+				} /* for y */ 
+			} /* for x */
+			//Now copy prepared bytes to display
+			for (byte y = 0;y<3;y++)
+			{
+				setPos(px, py+y);
+				for (byte x = 0;x<24;x++)
+				{ 
+					sendData(scale3x[x][y]);
+				}
 			}
-		}
-	} 
-	px += fontsize;
+		} // end if (fontsize ==3) 
+		px += fontsize;
+	} // end else /n
 	if (px >= OLED_Max_X)
 	{
 		px=0;
@@ -308,6 +317,16 @@ void Display::setFontSize(byte f)
 }
 
 // #####################################################################################################################
+// ##### Invert    #####################################################################################################
+// #####################################################################################################################
+void Display::invert(boolean f)
+{	
+	inv = f ? 255 : 0; 
+}
+
+
+
+// #####################################################################################################################
 // ##### PRINT NUMBER (NON FLOAT VALUE) ################################################################################
 // #####################################################################################################################
 
@@ -337,6 +356,13 @@ void Display::printNum(signed char Data)
   }
 }
 
+void Display::printHex(byte Data)
+{
+	printChar((Data < 0xA0) ?	(0x30+Data/16) : 0x37+Data/16);
+	printChar((Data % 16) < 0x0A ? (0x30+Data % 16) : 0x37+Data % 16);
+}
+
+
 // #####################################################################################################################
 // ##### DRAW BITMAP ###################################################################################################
 // #####################################################################################################################
@@ -344,7 +370,7 @@ void Display::drawBitmap(const byte *Bitmaparray, byte PosX, byte PosY, byte Wid
 {
 	// max width = 16
 	// max height = 8
-	setCursor(PosX, PosY);
+	setPos(PosX, PosY);
 
 	byte Column = 0;
 	for(int i = 0; i < Width * 8 * Height; i++)
@@ -353,7 +379,7 @@ void Display::drawBitmap(const byte *Bitmaparray, byte PosX, byte PosY, byte Wid
 		if (++Column == Width * 8)
 		{
 			Column = 0;
-			setCursor(PosX, ++PosY);
+			setPos(PosX, ++PosY);
 		}
 	}
 }
@@ -361,6 +387,11 @@ void Display::drawBitmap(const byte *Bitmaparray, byte PosX, byte PosY, byte Wid
 // ##### SET CURSOR ####################################################################################################
 // #####################################################################################################################
 void Display::setCursor(byte PosX, byte PosY)
+{
+	setPos((px = PosX), (py = PosY));
+}
+
+void Display::setPos(byte PosX, byte PosY)
 {
 	// Y - 1 unit = 1 page (8 pixel rows)
 	// X - 1 unit = 8 pixel columns
@@ -373,15 +404,17 @@ void Display::setCursor(byte PosX, byte PosY)
 // #####################################################################################################################
 void Display::clearDisplay()
 {
-	for(byte X = 0; X < 8; X++)
+	for(byte y = 0; y < 8; y++)
 	{
-		setCursor(0, X);
-		for(byte Y = 0; Y < 128; Y++) // clear all columns
+		setPos(0, y);
+		for(byte x = 0; x < 128; x++) // clear all columns
 		{
 			sendData(0);
 		}
 	}
 	setCursor(0, 0);
+	fontsize=1;
+	inv=0;
 }
 // #####################################################################################################################
 // ##### ROTATE DISPLAY 180 DEGREES ####################################################################################

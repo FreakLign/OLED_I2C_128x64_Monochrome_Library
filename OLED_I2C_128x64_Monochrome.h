@@ -69,8 +69,10 @@ class Display
 		void printString(const byte *Data, byte PosX = 255, byte PosY = 255);
 		void printNum(signed char Data);
 		void printNum(char Data, byte PosX, byte PosY);
+		void printHex(byte Data);
 		void drawBitmap(const byte *Bitmaparray, byte PosX, byte PosY, byte Width, byte Height);
 		void clearDisplay();
+		void setPos(byte PosX, byte PosY);
 		void setCursor(byte PosX, byte PosY);
 		void setBlackBackground();
 		void setWhiteBackground();
@@ -81,7 +83,9 @@ class Display
 		void setBrightness(byte Brightness);
 		void rotateDisplay180();
 		void setFontSize(byte f);
+		void invert(boolean f); 
 		byte px, py, fontsize;
+		byte inv = 0;
 		boolean scroll = false;
 };
 
@@ -89,4 +93,3 @@ extern Display oled;
 #endif
 // #####################################################################################################################
 // ##### END OF CODE ###################################################################################################
-// #####################################################################################################################
