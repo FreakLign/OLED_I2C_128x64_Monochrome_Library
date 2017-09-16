@@ -4,9 +4,9 @@
 // 8x8 Font 
 // First 32 characters for graphics
 // 32-127: ASCII code characters
-// 160-255: ISO-8859-1 codepage - just like in Windows, some basic int. language support (which the Arduino can handle)
- 
-// CC-BY untergeekDE 2017 - derived from a project by github.com/deloarts
+// 160-255: CP437 (the code page you know from MS-DOS - ugh!)
+// Made by Benedikt K. in the microcontroller.net forum: 
+// https://www.mikrocontroller.net/topic/54860
  
 // The characters are stored in a way that is easy for the OLED display/library to display: one byte means one column, 
 // with the LSB on top and the MSB on the bottom. 
