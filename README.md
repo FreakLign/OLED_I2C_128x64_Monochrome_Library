@@ -5,7 +5,7 @@ It has been tested with the following device:
 	- 0,96" I2C OLED, Manufacturer: Heltec-Taobao
 	- Teensy 3.2 
 
-Used for a small [https://www.untergeek.de/2017/09/v2-0-a-teensy-based-midi-controller/](MIDI controller project).
+Used for a small [MIDI controller project](https://www.untergeek.de/2017/09/v2-0-a-teensy-based-midi-controller/]).
 
 If this library is not for you, you may try the Adafruit_SSD1306 library - does the same things more consistently, 
 
