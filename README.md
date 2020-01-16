@@ -1,11 +1,11 @@
 # OLED Library
 
-This is a simple, lightweight library for an 0,96" monochrome organic liquid crystal display (128x64 pixels)
+This is a simple, lightweight library for displaying text info in three character sizes on an 0,96" monochrome organic liquid crystal display (128x64 pixels)
 It has been tested with the following device:
 	- 0,96" I2C OLED, Manufacturer: Heltec-Taobao
 	- Teensy 3.2 
 
-Used for a small [MIDI controller project](https://www.untergeek.de/2017/09/v2-0-a-teensy-based-midi-controller/]).
+Watch it in action [here on Youtube](https://youtu.be/K8MOZVIM1YU). Used for a small [MIDI controller project: A Teensy-Based Midi Controller](https://www.untergeek.de/2017/09/v2-0-a-teensy-based-midi-controller/). 
 
 If this library is not for you, you may try the Adafruit_SSD1306 library - does the same things more consistently, 
 
